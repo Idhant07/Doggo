@@ -1,57 +1,93 @@
-//Create variables here
-var dog, happyDog, database, foodS, foodStock;
-var sedDoge;
+var dog,sadDog,happyDog, database;
+var foodS,foodStock;
+var addFood;
+var foodObj;
+var feed , lastFed,fedTime;
+//create feed and lastFed variable here
 
-function preload()
-{
-	happyDog = loadImage("images/dogImg1.png")
-  sedDoge = loadImage("images/dogImg.png")
+
+function preload(){
+sadDog=loadImage("Dog.png");
+happyDog=loadImage("happy dog.png");
 }
 
 function setup() {
-	createCanvas(800, 700);
-  database = firebase.database()
+  database=firebase.database();
+  createCanvas(1000,400);
 
-  dog = createSprite(400, 350, 100, 100)
-  dog.addImage(sedDoge)
-  dog.scale = 0.5
-  foodStock = database.ref('Food')
-  foodStock.on('value', readStock)
-}
+  foodObj = new Food();
 
-
-function draw() {  
+  foodStock=database.ref('Food');
+  foodStock.on("value",readStock);
   
-  background(46, 139, 87)
+  dog=createSprite(800,200,150,150);
+  dog.addImage(sadDog);
+  dog.scale=0.15;
 
+  //create feed the dog button here
 
-  if(keyWentDown(UP_ARROW)){
-   writeStock(foodS)
-   dog.addImage(happyDog)
-  }
+  addFood=createButton("Add Food");
+  addFood.position(800,95);
+  addFood.mousePressed(addFoods);
 
+  feed=createButton("Feed Dog")
+  feed.position(700,95);
+  feed.mousePressed(feedDog);
+
+}
+
+function draw() {
+  background(46,139,87);
+  foodObj.display();
+
+  //write code to read fedtime value from the database 
+  fedTime=database.ref('FeedTime')
+  fedTime.on("value",function(data){
+    lastFed=data.val()
+  })
+ 
+  //write code to display text lastFed time here
+fill("red")
+textSize(20)
+if(lastFed>=12){
+  text("last fed:"+lastFed%12+"pm",400,95)
+}
+else if(lastFed===0){
+  text("last fed:12am",400,95)
+}
+ else{
+  text("last fed:"+lastFed+"am",400,95)
+ }
   drawSprites();
-  //add styles here
- fill("black")
- textSize(20)
- text("Note: Press UP Arrow Key to feed Drago Milk", 200, 50)
- text("Food Remaining:"+ foodS, 300, 150)
 }
 
+//function to read food Stock
 function readStock(data){
-
-foodS = data.val()
+  foodS=data.val();
+  foodObj.updateFoodStock(foodS);
 }
 
-function writeStock(x){
-  if(x<=0){
-  x = 0
-  }
-  else{
-    x = x - 1
-  }
+
+function feedDog(){
+  dog.addImage(happyDog);
+
+  //write code here to update food stock and last fed time
+var food_stock_val = foodObj.getFoodStock();
+if(food_stock_val <=0){
+  foodObj.updateFoodStock(food_stock_val*0)
+}else{
+  foodObj.updateFoodStock(food_stock_val-1);
+}
+database.ref('/').update({
+  Food:foodObj.getFoodStock(),
+  FeedTime:hour()
+})
+}
+
+//function to add food in stock
+function addFoods(){
+  foodS++;
   database.ref('/').update({
-    Food: x
+    Food:foodS
   })
 }
-
